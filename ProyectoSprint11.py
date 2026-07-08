@@ -2,6 +2,7 @@
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
 # ------------------ Importaciones
 
@@ -52,3 +53,8 @@ numeric = ["CreditScore", "Age", "Tenure", "Balance", "NumOfProducts", "Estimate
 features_train = features_train.astype({c: "float64" for c in numeric})
 features_valid = features_valid.astype({c: "float64" for c in numeric})
 
+"""se crea una instancia para poder estandarizar los datos, el punro es restarle la media y dividir entre la desv stdr. aqui se realiza el calculo de la media y la desv stdr pero solo usando los datos del entrenamiento"""
+scaler = StandardScaler()
+scaler.fit(features_train[numeric])
+features_train.loc[:, numeric] = scaler.transform(features_train[numeric])
+features_valid.loc[:, numeric] = scaler.transform(features_valid[numeric])
