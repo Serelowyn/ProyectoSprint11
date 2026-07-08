@@ -1,6 +1,7 @@
 # ------------------ Importaciones
 
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 # ------------------ Importaciones
 
@@ -37,3 +38,17 @@ target = data_ohe["Exited"]
 features = data_ohe.drop("Exited", axis=1)
 
 print(features)
+
+# 2. Examina el equilibrio de clases. Entrena el modelo sin tener en cuenta el desequilibrio. Describe brevemente tus hallazgos.
+
+"""se hace el conteo de las veces que aparece cada valor en la columna exited"""
+print(target.value_counts(normalize=True))
+
+"""se separan los datos donde el 25 por ciento va al ocnjunto de validacion y el resto al entrenamiento"""
+features_train, features_valid, target_train, target_valid = train_test_split(features, target, test_size=0.25, random_state=12345)
+
+"""se haze una lista de las columnas numericas y se convierten a float ya que habian tipos de datos int64 y si no lo cambio la prueba arrojara un error, se hace eso en train y en valid"""
+numeric = ["CreditScore", "Age", "Tenure", "Balance", "NumOfProducts", "EstimatedSalary"]
+features_train = features_train.astype({c: "float64" for c in numeric})
+features_valid = features_valid.astype({c: "float64" for c in numeric})
+
