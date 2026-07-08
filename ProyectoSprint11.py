@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 
 from sklearn.metrics import f1_score, precision_score, recall_score
 
@@ -83,3 +84,13 @@ model_tree = DecisionTreeClassifier(random_state=12345)
 model_tree.fit(features_train, target_train)
 pred_tree = model_tree.predict(features_valid)
 print("arbol de decision f1:", f1_score(target_valid, pred_tree), "recall:", recall_score(target_valid, pred_tree), "precision:", precision_score(target_valid, pred_tree))
+
+"""se crea el modelo de bosque aleatorio"""
+# modelo bosque aletaroio
+
+model_rf = RandomForestClassifier(random_state=12345, n_estimators=100) # 100 "arboles" de decisiones distintos
+model_rf.fit(features_train, target_train)
+pred_rf = model_rf.predict(features_valid)
+print("bosque aleatorio f1:", f1_score(target_valid, pred_rf), "recall:", recall_score(target_valid, pred_rf), "precision:", precision_score(target_valid, pred_rf))
+
+"""se puede verificar con los resultados, que sin correccion de desequilibro, no exitse ni un solo modelo que llegue de manera fiable al f1 de 0.59, aunque el bosque aleatroio se acerca no sirve porque no llega, y la regresion logistica es la mas afectadad de todas."""
