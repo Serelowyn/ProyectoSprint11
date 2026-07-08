@@ -95,7 +95,7 @@ print("bosque aleatorio f1:", f1_score(target_valid, pred_rf), "recall:", recall
 
 """se puede verificar con los resultados, que sin correccion de desequilibro, no exitse ni un solo modelo que llegue de manera fiable al f1 de 0.59, aunque el bosque aleatroio se acerca no sirve porque no llega, y la regresion logistica es la mas afectadad de todas."""
 
-# 2. Mejora la calidad del modelo. Asegúrate de utilizar al menos dos enfoques para corregir el desequilibrio de clases. Utiliza conjuntos de entrenamiento y validación para encontrar el mejor modelo y el mejor conjunto de parámetros. Entrena diferentes modelos en los conjuntos de entrenamiento y validación. Encuentra el mejor. Describe brevemente tus hallazgos.
+# 3. Mejora la calidad del modelo. Asegúrate de utilizar al menos dos enfoques para corregir el desequilibrio de clases. Utiliza conjuntos de entrenamiento y validación para encontrar el mejor modelo y el mejor conjunto de parámetros. Entrena diferentes modelos en los conjuntos de entrenamiento y validación. Encuentra el mejor. Describe brevemente tus hallazgos.
 
 """primero se utiliza el argumento (class_weigvht="balanced") para que le de peso a la clase minoritaria durante el entrenamiento """
 # ----------- 1: class_weight balanced"
@@ -129,3 +129,17 @@ for repeat in [2, 3, 4]:
     print(f"bosque aleatorio upsample repeat={repeat} f1:",
         f1_score(target_valid, model.predict(features_valid)))
 
+"""para buscar el mejor rank de f1 buscamos el mejor resultado y los mejores parametros de dicho resultado"""
+best_f1, best_params = 0, None
+for est in [50, 100, 200]:
+    for depth in [6, 8, 10, 12, None]:
+        model = RandomForestClassifier(
+            n_estimators=est, max_depth=depth,
+            class_weight="balanced", random_state=12345
+        )
+        model.fit(features_train, target_train)
+        f1 = f1_score(target_valid, model.predict(features_valid))
+        if f1 > best_f1:
+            best_f1, best_params = f1, (est, depth)
+
+print("best configuracion balanceada:", best_params, "f1:", best_f1)
