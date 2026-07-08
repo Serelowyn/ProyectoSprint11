@@ -4,6 +4,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 
 from sklearn.metrics import f1_score, precision_score, recall_score
 
@@ -66,6 +67,7 @@ features_train.loc[:, numeric] = scaler.transform(features_train[numeric])
 features_valid.loc[:, numeric] = scaler.transform(features_valid[numeric])
 
 """se crea un modelo de regresion logistica, se especificar el solver para evitar algun error con el que se ajuste por default"""
+#modelo de regresion lineal
 model_lr = LogisticRegression(random_state=12345, solver="liblinear")
 
 model_lr.fit(features_train, target_train) 
@@ -73,3 +75,11 @@ pred_lr = model_lr.predict(features_valid) #entrenamiento del modelo
 
 """se comparan los modelos"""
 print("regresion logistica f1:", f1_score(target_valid, pred_lr), "recall:", recall_score(target_valid, pred_lr), "precision:", precision_score(target_valid, pred_lr))
+
+"""se crea el modelo de arbol de decisiones"""
+# modelo arbol de decisiones
+model_tree = DecisionTreeClassifier(random_state=12345)
+
+model_tree.fit(features_train, target_train)
+pred_tree = model_tree.predict(features_valid)
+print("arbol de decision f1:", f1_score(target_valid, pred_tree), "recall:", recall_score(target_valid, pred_tree), "precision:", precision_score(target_valid, pred_tree))
