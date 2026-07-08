@@ -6,7 +6,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
-
+from sklearn.utils import shuffle
 from sklearn.metrics import f1_score, precision_score, recall_score
 
 # ------------------ Importaciones
@@ -68,7 +68,7 @@ features_train.loc[:, numeric] = scaler.transform(features_train[numeric])
 features_valid.loc[:, numeric] = scaler.transform(features_valid[numeric])
 
 """se crea un modelo de regresion logistica, se especificar el solver para evitar algun error con el que se ajuste por default"""
-#modelo de regresion lineal
+#modelo de regresion logistica
 model_lr = LogisticRegression(random_state=12345, solver="liblinear")
 
 model_lr.fit(features_train, target_train) 
@@ -94,3 +94,38 @@ pred_rf = model_rf.predict(features_valid)
 print("bosque aleatorio f1:", f1_score(target_valid, pred_rf), "recall:", recall_score(target_valid, pred_rf), "precision:", precision_score(target_valid, pred_rf))
 
 """se puede verificar con los resultados, que sin correccion de desequilibro, no exitse ni un solo modelo que llegue de manera fiable al f1 de 0.59, aunque el bosque aleatroio se acerca no sirve porque no llega, y la regresion logistica es la mas afectadad de todas."""
+
+# 2. Mejora la calidad del modelo. Asegúrate de utilizar al menos dos enfoques para corregir el desequilibrio de clases. Utiliza conjuntos de entrenamiento y validación para encontrar el mejor modelo y el mejor conjunto de parámetros. Entrena diferentes modelos en los conjuntos de entrenamiento y validación. Encuentra el mejor. Describe brevemente tus hallazgos.
+
+"""primero se utiliza el argumento (class_weigvht="balanced") para que le de peso a la clase minoritaria durante el entrenamiento """
+# ----------- 1: class_weight balanced"
+model_lr_bal = LogisticRegression(random_state=12345, solver="liblinear", class_weight="balanced")
+model_lr_bal.fit(features_train, target_train)
+print("regresion logistica con nuevo f1:", f1_score(target_valid, model_lr_bal.predict(features_valid)))
+
+model_rf_bal = RandomForestClassifier(random_state=12345, n_estimators=100, class_weight="balanced")
+model_rf_bal.fit(features_train, target_train)
+print("bosque aleatorio con nuevo f1:", f1_score(target_valid, model_rf_bal.predict(features_valid)))
+
+model_tree_bal = DecisionTreeClassifier(random_state=12345, class_weight="balanced")
+model_tree_bal.fit(features_train, target_train)
+pred_tree_bal = model_tree_bal.predict(features_valid)
+print("arbol de decisiones con nuevo f1:", f1_score(target_valid, pred_tree_bal))
+
+# ----------- 2: sobremuestreo"
+def upsample(features, target, repeat):
+    features_zeros = features[target == 0] #tabla de features  que busca los 0
+    features_ones = features[target == 1] #tabla de features que busca los 1
+    target_zeros = target[target == 0] #tabla de target que busca los 0
+    target_ones = target[target == 1] #tabla de target que busca los 1
+    features_upsampled = pd.concat([features_zeros] + [features_ones] * repeat)
+    target_upsampled = pd.concat([target_zeros] + [target_ones] * repeat)
+    return shuffle(features_upsampled, target_upsampled, random_state=12345)
+
+for repeat in [2, 3, 4]:
+    f_up, t_up = upsample(features_train, target_train, repeat)
+    model = RandomForestClassifier(random_state=12345, n_estimators=100)
+    model.fit(f_up, t_up)
+    print(f"bosque aleatorio upsample repeat={repeat} f1:",
+        f1_score(target_valid, model.predict(features_valid)))
+
