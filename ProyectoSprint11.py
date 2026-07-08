@@ -7,7 +7,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.utils import shuffle
-from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score, confusion_matrix
 
 # ------------------ Importaciones
 
@@ -23,7 +23,7 @@ data = pd.read_csv(r"churn.csv")
 
 """para una vista general y particular con los 3 primeros casos"""
 print(data.head(3))
-print(data.info)
+print(data.info())
 
 """para verufucar el tipo de dato de cada columna"""
 print(data.dtypes)
@@ -143,3 +143,64 @@ for est in [50, 100, 200]:
             best_f1, best_params = f1, (est, depth)
 
 print("best configuracion balanceada:", best_params, "f1:", best_f1)
+
+"""se compararon las dos tecnicas de correccion de balance: class_weight balanced (mejor f1 = 0.648 con n_estimators=200, max_depth=8), sobremuestreo con bosque aleatorio (mejor f1 = 0.62 con repeat=4). se eligio class_weight balanced junto con busqueda de hiperparametros porque dio el f1 mas alto al final."""
+
+# 4. Realiza la prueba final.
+
+"""separo el 20% de los datos para el conjunto de test"""
+features_tv, features_test, target_tv, target_test = train_test_split(features, target, test_size=0.2, random_state=12345)
+
+"""separo el 80% de los datos para el conjunto de validacion"""
+features_train, features_valid, target_train, target_valid = train_test_split(features_tv, target_tv, test_size=0.25, random_state=12345)
+
+"""bucle que recorre los 3 datasets y convierte los datos a float64"""
+for df in [features_train, features_valid, features_test]:
+    for col in numeric:
+        df[col] = df[col].astype("float64")
+
+scaler = StandardScaler()
+scaler.fit(features_train[numeric])
+features_train.loc[:, numeric] = scaler.transform(features_train[numeric])
+features_valid.loc[:, numeric] = scaler.transform(features_valid[numeric])
+features_test.loc[:, numeric] = scaler.transform(features_test[numeric])
+
+best_f1, best_params = 0, None
+for est in [50, 100, 200]:
+    for depth in [6, 8, 10, 12, None]:
+        model = RandomForestClassifier(
+            n_estimators=est, max_depth=depth,
+            class_weight="balanced", random_state=12345
+        )
+        model.fit(features_train, target_train)
+        f1 = f1_score(target_valid, model.predict(features_valid))
+        if f1 > best_f1:
+            best_f1, best_params = f1, (est, depth)
+
+print("configuracion definitiva:", best_params, "f1 valid:", best_f1)
+
+features_final = pd.concat([features_train, features_valid])
+target_final = pd.concat([target_train, target_valid])
+
+final_model = RandomForestClassifier(
+    n_estimators=best_params[0], max_depth=best_params[1],
+    class_weight="balanced", random_state=12345
+)
+final_model.fit(features_final, target_final)
+
+predicted_test = final_model.predict(features_test)
+probabilities_test = final_model.predict_proba(features_test)[:, 1]
+
+f1_test = f1_score(target_test, predicted_test)
+auc_roc_test = roc_auc_score(target_test, probabilities_test)
+
+"""resultados finales"""
+print("f1:", f1_test)
+# el f1 supera el minimo pedido de 0.59
+
+print("precision:", precision_score(target_test, predicted_test))
+print("recall:", recall_score(target_test, predicted_test))
+print("auc-roc:", auc_roc_test)
+print("matriz de confusion:", confusion_matrix(target_test, predicted_test))
+
+"""la metrica auc-roc fue bastante mas superior, muy probablemente porque el f1 tiene por default su umbral de clasificacion en 0.5  mientras que el otro modelo tiene la capacidad de separar ambas clases en la cantiadd de umbrales posibles. Podria traducirse sobre que la metreica auc roc es la que mejor diferencia los filtros anteriormente hechos de 1 y 0 para features y target"""
